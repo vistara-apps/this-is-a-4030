@@ -1,62 +1,39 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import OpportunityCard from './OpportunityCard'
-import { Search, Filter, Sparkles, TrendingUp } from 'lucide-react'
+import { Search, Filter, Sparkles, TrendingUp, RefreshCw } from 'lucide-react'
+import dataService from '../services/dataService'
 
 const OpportunityScout = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBy, setFilterBy] = useState('all')
+  const [opportunities, setOpportunities] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  // Mock opportunity data
-  const opportunities = [
-    {
-      opportunityId: 'opp1',
-      userId: user.userId,
-      platform: 'UserTesting',
-      taskDescription: 'Test mobile apps and websites for usability issues',
-      estimatedProfit: 30,
-      timeCommitment: '20-30 minutes',
-      rankingScore: 9.2,
-      url: 'https://usertesting.com',
-      category: 'testing',
-      trend: 'hot'
-    },
-    {
-      opportunityId: 'opp2',
-      userId: user.userId,
-      platform: 'Respondent',
-      taskDescription: 'Participate in high-paying research studies',
-      estimatedProfit: 150,
-      timeCommitment: '1-2 hours',
-      rankingScore: 8.8,
-      url: 'https://respondent.io',
-      category: 'research',
-      trend: 'trending'
-    },
-    {
-      opportunityId: 'opp3',
-      userId: user.userId,
-      platform: 'Clickworker',
-      taskDescription: 'AI training data creation and validation',
-      estimatedProfit: 12,
-      timeCommitment: '10-15 minutes',
-      rankingScore: 7.5,
-      url: 'https://clickworker.com',
-      category: 'microtask',
-      trend: 'new'
-    },
-    {
-      opportunityId: 'opp4',
-      userId: user.userId,
-      platform: 'Prolific',
-      taskDescription: 'Academic research participation',
-      estimatedProfit: 25,
-      timeCommitment: '30-45 minutes',
-      rankingScore: 8.3,
-      url: 'https://prolific.co',
-      category: 'research',
-      trend: 'stable'
+  useEffect(() => {
+    loadOpportunities()
+  }, [user.userId])
+
+  const loadOpportunities = async () => {
+    setLoading(true)
+    try {
+      const data = await dataService.getOpportunities(user.userId)
+      setOpportunities(data)
+    } catch (error) {
+      console.error('Failed to load opportunities:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    dataService.clearCache(`opportunities_${user.userId}_{}`)
+    await loadOpportunities()
+    setRefreshing(false)
+  }
+
+
 
   const filteredOpportunities = opportunities.filter(opp => {
     const matchesSearch = opp.platform.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,28 +42,73 @@ const OpportunityScout = ({ user }) => {
     return matchesSearch && matchesFilter
   })
 
+  const hasAIAccess = dataService.hasFeatureAccess(user.subscriptionTier, 'ai_recommendations')
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-muted/20 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-48 bg-muted/20 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-text mb-2">Opportunity Scout</h2>
-        <p className="text-muted">Discover new ways to earn money online</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-text mb-2">Opportunity Scout</h2>
+          <p className="text-muted">Discover new ways to earn money online</p>
+        </div>
+        
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="bg-surface text-text px-4 py-2 rounded-lg font-medium hover:bg-muted/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-card"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* AI-Powered Insights */}
-      <div className="bg-gradient-to-r from-primary to-accent rounded-lg p-6 text-white">
-        <div className="flex items-center space-x-2 mb-3">
-          <Sparkles className="w-5 h-5" />
-          <h3 className="font-semibold">AI-Powered Recommendations</h3>
+      {hasAIAccess ? (
+        <div className="bg-gradient-to-r from-primary to-accent rounded-lg p-6 text-white">
+          <div className="flex items-center space-x-2 mb-3">
+            <Sparkles className="w-5 h-5" />
+            <h3 className="font-semibold">AI-Powered Recommendations</h3>
+          </div>
+          <p className="text-white/90 mb-4">
+            Based on your earning history, we found {filteredOpportunities.length} new opportunities that match your profile.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">High-paying research</span>
+            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">Quick tasks</span>
+            <span className="bg-white/20 px-3 py-1 rounded-full text-sm">Tech-focused</span>
+          </div>
         </div>
-        <p className="text-white/90 mb-4">
-          Based on your earning history, we found {filteredOpportunities.length} new opportunities that match your profile.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <span className="bg-white/20 px-3 py-1 rounded-full text-sm">High-paying research</span>
-          <span className="bg-white/20 px-3 py-1 rounded-full text-sm">Quick tasks</span>
-          <span className="bg-white/20 px-3 py-1 rounded-full text-sm">Tech-focused</span>
+      ) : (
+        <div className="bg-gradient-to-r from-primary to-accent rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Unlock AI Recommendations</h3>
+              <p className="text-white/90 mb-4">
+                Get personalized opportunity suggestions based on your earning patterns.
+              </p>
+              <button className="bg-white text-primary px-6 py-2 rounded-lg font-medium hover:bg-white/90 transition-colors">
+                Upgrade to Pro
+              </button>
+            </div>
+            <Sparkles className="w-16 h-16 text-white/50" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4">

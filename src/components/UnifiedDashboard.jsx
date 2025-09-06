@@ -1,56 +1,35 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import EarningCard from './EarningCard'
-import { TrendingUp, DollarSign, Calendar, Target } from 'lucide-react'
+import { TrendingUp, DollarSign, Calendar, Target, RefreshCw, Plus } from 'lucide-react'
+import dataService from '../services/dataService'
 
 const UnifiedDashboard = ({ user }) => {
-  // Mock earning data
-  const earnings = [
-    {
-      earningId: 'e1',
-      userId: user.userId,
-      platform: 'Survey Junkie',
-      task: 'Consumer Survey',
-      amount: 15.50,
-      date: '2024-01-15',
-      sourceType: 'survey'
-    },
-    {
-      earningId: 'e2',
-      userId: user.userId,
-      platform: 'Swagbucks',
-      task: 'Watch Videos',
-      amount: 8.25,
-      date: '2024-01-14',
-      sourceType: 'video'
-    },
-    {
-      earningId: 'e3',
-      userId: user.userId,
-      platform: 'TaskRabbit',
-      task: 'Furniture Assembly',
-      amount: 85.00,
-      date: '2024-01-13',
-      sourceType: 'gig'
-    },
-    {
-      earningId: 'e4',
-      userId: user.userId,
-      platform: 'Upwork',
-      task: 'Data Entry',
-      amount: 25.00,
-      date: '2024-01-12',
-      sourceType: 'freelance'
-    },
-    {
-      earningId: 'e5',
-      userId: user.userId,
-      platform: 'Amazon MTurk',
-      task: 'Content Moderation',
-      amount: 12.75,
-      date: '2024-01-11',
-      sourceType: 'microtask'
+  const [earnings, setEarnings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  useEffect(() => {
+    loadEarnings()
+  }, [user.userId])
+
+  const loadEarnings = async () => {
+    setLoading(true)
+    try {
+      const data = await dataService.getEarnings(user.userId)
+      setEarnings(data)
+    } catch (error) {
+      console.error('Failed to load earnings:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    dataService.clearCache(`earnings_${user.userId}_{}`)
+    await loadEarnings()
+    setRefreshing(false)
+  }
 
   const totalEarnings = earnings.reduce((sum, earning) => sum + earning.amount, 0)
   const weeklyEarnings = earnings.filter(e => new Date(e.date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).reduce((sum, e) => sum + e.amount, 0)
@@ -87,11 +66,44 @@ const UnifiedDashboard = ({ user }) => {
     }
   ]
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-muted/20 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-muted/20 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-text mb-2">Dashboard</h2>
-        <p className="text-muted">Overview of your micro-earning activities</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-text mb-2">Dashboard</h2>
+          <p className="text-muted">Overview of your micro-earning activities</p>
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="bg-surface text-text px-4 py-2 rounded-lg font-medium hover:bg-muted/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-card"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+          
+          <button className="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center space-x-2">
+            <Plus className="w-4 h-4" />
+            <span>Add Earning</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
