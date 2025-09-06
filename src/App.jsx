@@ -6,6 +6,8 @@ import UnifiedDashboard from './components/UnifiedDashboard'
 import OpportunityScout from './components/OpportunityScout'
 import RewardUtilityHub from './components/RewardUtilityHub'
 import TaskAutomation from './components/TaskAutomation'
+import Analytics from './components/Analytics'
+import PlatformIntegrator from './components/PlatformIntegrator'
 import Settings from './components/Settings'
 
 function App() {
@@ -27,6 +29,12 @@ function App() {
         return <RewardUtilityHub user={user} />
       case 'automation':
         return <TaskAutomation user={user} />
+      case 'analytics':
+        return <Analytics user={user} />
+      case 'platforms':
+        return <PlatformIntegrator user={user} variant="manage" />
+      case 'connect-platform':
+        return <PlatformIntegrator user={user} variant="connect" />
       case 'settings':
         return <Settings user={user} setUser={setUser} />
       default:

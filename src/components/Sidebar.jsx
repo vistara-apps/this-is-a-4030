@@ -1,5 +1,5 @@
 import React from 'react'
-import { BarChart3, Search, Gift, Zap, Settings, DollarSign } from 'lucide-react'
+import { BarChart3, Search, Gift, Zap, Settings, DollarSign, TrendingUp, Link } from 'lucide-react'
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const menuItems = [
@@ -7,6 +7,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'opportunities', label: 'Opportunities', icon: Search },
     { id: 'rewards', label: 'Rewards', icon: Gift },
     { id: 'automation', label: 'Automation', icon: Zap },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+    { id: 'platforms', label: 'Platforms', icon: Link },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
 
